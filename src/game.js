@@ -44,8 +44,11 @@ export function buildGameData(mode, players, entry) {
 
 export function checkEnd(G) {
   if (G.mode === 'imposter') {
-    const imp = G.players.find(p => p.isImposter && p.eliminated);
-    return imp ? 'players_win' : 'imposter_wins';
+    const imp = G.players.find(p => p.isImposter);
+    if (imp.eliminated) return 'players_win';
+    const nonImpLeft = G.players.filter(p => !p.isImposter && !p.eliminated).length;
+    if (nonImpLeft <= 1) return 'imposter_wins';
+    return 'continue';
   }
   const ckLeft = G.players.filter(p => p.isCuckoo && !p.eliminated).length;
   const plLeft = G.players.filter(p => !p.isCuckoo && !p.eliminated).length;

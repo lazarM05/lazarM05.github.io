@@ -60,10 +60,16 @@ describe('checkEnd — imposter mode', () => {
     expect(checkEnd(G)).toBe('players_win');
   });
 
-  it('imposter_wins when a regular player was eliminated instead', () => {
-    const G = buildGameData('imposter', players5, entry);
+  it('continue when a regular player is eliminated but more than 1 non-imposter remains', () => {
+    const G = buildGameData('imposter', players5, entry); // 4 non-imposters
     const notImp = G.players.find(p => !p.isImposter);
-    notImp.eliminated = true;
+    notImp.eliminated = true; // 3 non-imposters left
+    expect(checkEnd(G)).toBe('continue');
+  });
+
+  it('imposter_wins when non-imposters remaining drops to the imposter count (1)', () => {
+    const G = buildGameData('imposter', players5, entry); // 4 non-imposters
+    G.players.filter(p => !p.isImposter).slice(0, 3).forEach(p => (p.eliminated = true)); // 1 left
     expect(checkEnd(G)).toBe('imposter_wins');
   });
 });
