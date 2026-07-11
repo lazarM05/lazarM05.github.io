@@ -20,6 +20,8 @@ Object.assign(window, {
   restartSame: ui.restartSame,
   onImpAutoToggle: ui.onImpAutoToggle,
   onImpCountInput: ui.onImpCountInput,
+  onCkAutoToggle: ui.onCkAutoToggle,
+  onCkCountInput: ui.onCkCountInput,
   imposterGuessedWord: ui.imposterGuessedWord,
 });
 

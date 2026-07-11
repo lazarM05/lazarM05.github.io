@@ -49,6 +49,17 @@
       </div>
       <div class="td">Auto Imposter Count — 1:3 imposter to player ratio</div>
     </div>
+    <div class="imp-count-block" id="ck-count-block" style="display:none">
+      <div class="imp-count-lbl">Cuckoo Count</div>
+      <div class="imp-count-row">
+        <input type="number" class="imp-count-input" id="opt-ck-count" min="1" value="1" oninput="onCkCountInput(this.value)">
+        <label class="imp-auto-toggle">
+          <input type="checkbox" id="opt-ck-auto" checked onchange="onCkAutoToggle()">
+          <span>Auto</span>
+        </label>
+      </div>
+      <div class="td">Auto Cuckoo Count — 1:3 cuckoo to player ratio</div>
+    </div>
   </div>
   <div class="sc">
     <div class="st">📦 Word Categories</div>

@@ -44,10 +44,11 @@ function renderPlayers() {
     list.appendChild(row);
   });
   renderImpCountBlock();
+  renderCkCountBlock();
   refreshInfo();
 }
 
-// 1:3 imposter-to-player ratio cap — same formula Cuckoo mode uses for its own count.
+// 1:3 imposter/cuckoo-to-player ratio cap — shared by both modes' count controls.
 function impCountCap(n) { return Math.max(1, Math.floor(n / 3)); }
 
 function renderImpCountBlock() {
@@ -83,6 +84,39 @@ export function onImpCountInput(value) {
   refreshInfo();
 }
 
+function renderCkCountBlock() {
+  const block = document.getElementById('ck-count-block');
+  if (mode !== 'cuckoo') {
+    block.style.display = 'none';
+    return;
+  }
+  block.style.display = 'block';
+  const n = players.length;
+  const cap = impCountCap(n);
+  const input = document.getElementById('opt-ck-count');
+  const auto = document.getElementById('opt-ck-auto');
+  input.min = 1;
+  input.max = cap;
+  if (auto.checked) {
+    input.value = cap;
+    input.disabled = true;
+  } else {
+    input.disabled = false;
+    let v = parseInt(input.value, 10);
+    if (isNaN(v)) v = 1;
+    input.value = Math.min(Math.max(1, v), cap);
+  }
+}
+
+export function onCkAutoToggle() { renderCkCountBlock(); refreshInfo(); }
+export function onCkCountInput(value) {
+  const cap = impCountCap(players.length);
+  let v = parseInt(value, 10);
+  if (isNaN(v)) v = 1;
+  document.getElementById('opt-ck-count').value = Math.min(Math.max(1, v), cap);
+  refreshInfo();
+}
+
 export function addPlayer() {
   players.push('Player ' + (players.length + 1));
   renderPlayers();
@@ -112,9 +146,9 @@ function refreshInfo() {
     document.getElementById('setup-info').innerHTML =
       `<strong>How it works:</strong> ${impCount > 1 ? `${impCount} players are Imposters` : 'One player is the Imposter'} — they get no word, just the category (if enabled). Everyone gives associations each cycle. Each cycle, vote to eliminate someone or skip. Players win by eliminating all Imposters. Imposters win if their count equals or exceeds the remaining regular (non-Imposter) players, or if they correctly guess the word out loud. With ${n} players and ${impCount} imposter${impCount > 1 ? 's' : ''}: up to <strong>${maxCycles} cycle${maxCycles !== 1 ? 's' : ''}</strong>.`;
   } else {
-    const c = Math.max(1, Math.floor(n / 3));
-    const stopAt = Math.ceil(n / 2);
-    const maxCycles = n - stopAt;
+    const ckCountEl = document.getElementById('opt-ck-count');
+    const c = ckCountEl ? (parseInt(ckCountEl.value, 10) || 1) : Math.max(1, Math.floor(n / 3));
+    const maxCycles = n - 2 * c;
     document.getElementById('setup-info').innerHTML =
       `<strong>How it works:</strong> Everyone gets a word. <strong>${c} cuckoo${c > 1 ? 's' : ''}</strong> get a similar-but-different word and may not know it. Vote each cycle — person with most votes is out. Players win by eliminating all cuckoos before they are outnumbered. Cuckoos win if their count equals or exceeds remaining regular players. With ${n} players: up to <strong>${maxCycles} cycle${maxCycles !== 1 ? 's' : ''}</strong>.`;
   }
@@ -153,6 +187,7 @@ function buildSetup() {
     document.getElementById('opt-imp-auto').checked = true;
   } else {
     addToggle(ol, 'opt-cat-ck', 'Show Category on Cards', "Show the word category on each player's card", true);
+    document.getElementById('opt-ck-auto').checked = true;
   }
   addToggle(ol, 'opt-live-stats', 'Show Live Remaining Counts', 'Off = panel shows the starting numbers all game. On = counts update live each cycle.', false);
   renderPlayers();
@@ -182,10 +217,10 @@ export function goToPeek() {
   };
   const pool = ALL_WORDS.filter(w => activeCats.has(w.cat));
   const entry = pool[rnd(pool.length)];
-  const impCount = mode === 'imposter' && document.getElementById('opt-imp-count')
-    ? (parseInt(document.getElementById('opt-imp-count').value, 10) || 1)
-    : 1;
-  G = buildGameData(mode, players, entry, impCount);
+  const countInputId = mode === 'imposter' ? 'opt-imp-count' : 'opt-ck-count';
+  const countEl = document.getElementById(countInputId);
+  const count = countEl ? (parseInt(countEl.value, 10) || 1) : undefined;
+  G = buildGameData(mode, players, entry, count);
   peekIdx = 0;
   peekUnlocked = false;
   document.getElementById('peek-mode-lbl').textContent = mode === 'imposter' ? 'STANDARD' : 'CUCKOO';
