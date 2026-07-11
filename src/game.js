@@ -1,9 +1,10 @@
 // Pure game-state logic — no DOM access. Safe to unit test in isolation.
 import { shuffle } from './utils.js';
 
-export function buildGameData(mode, players, entry, impCount = 1) {
+export function buildGameData(mode, players, entry, count) {
   const n = players.length;
   if (mode === 'imposter') {
+    const impCount = count || 1;
     const idxs = shuffle([...Array(n).keys()]);
     const impSet = new Set(idxs.slice(0, impCount));
     return {
@@ -23,16 +24,14 @@ export function buildGameData(mode, players, entry, impCount = 1) {
     };
   }
 
-  const numCk = Math.max(1, Math.floor(n / 3));
+  const ckCount = count || Math.max(1, Math.floor(n / 3));
   const idxs = shuffle([...Array(n).keys()]);
-  const ckSet = new Set(idxs.slice(0, numCk));
-  const stopAt = Math.ceil(n / 2);
+  const ckSet = new Set(idxs.slice(0, ckCount));
   return {
     mode: 'cuckoo',
     entry,
-    numCk,
-    stopAt,
-    maxCycles: n - stopAt,
+    numCk: ckCount,
+    maxCycles: n - 2 * ckCount,
     players: players.map((name, i) => ({
       name,
       isCuckoo: ckSet.has(i),

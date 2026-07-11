@@ -66,10 +66,10 @@ describe('buildGameData — cuckoo mode', () => {
     }
   });
 
-  it('computes maxCycles = n - ceil(n/2)', () => {
-    const players = Array.from({ length: 6 }, (_, i) => `P${i}`);
+  it('computes maxCycles = n - 2*ckCount (eliminations needed for non-cuckoos to reach parity with the cuckoos)', () => {
+    const players = Array.from({ length: 6 }, (_, i) => `P${i}`); // n=6, default ckCount=2
     const G = buildGameData('cuckoo', players, entry);
-    expect(G.maxCycles).toBe(3);
+    expect(G.maxCycles).toBe(2); // 6 - 2*2 = 2
   });
 
   it('gives cuckoos w[1] and everyone else w[0]', () => {
@@ -77,6 +77,33 @@ describe('buildGameData — cuckoo mode', () => {
     for (const p of G.players) {
       expect(p.word).toBe(p.isCuckoo ? 'Tiger' : 'Lion');
     }
+  });
+});
+
+describe('buildGameData — cuckoo mode (explicit count)', () => {
+  it('assigns exactly count cuckoos with w[1]; everyone else gets w[0]', () => {
+    const G = buildGameData('cuckoo', players7, entry, 3); // n=7
+    const cuckoos = G.players.filter(p => p.isCuckoo);
+    expect(cuckoos).toHaveLength(3);
+    for (const p of cuckoos) expect(p.word).toBe('Tiger');
+    const others = G.players.filter(p => !p.isCuckoo);
+    expect(others).toHaveLength(4);
+    for (const p of others) expect(p.word).toBe('Lion');
+  });
+
+  it('stores numCk on the game data', () => {
+    const G = buildGameData('cuckoo', players7, entry, 3);
+    expect(G.numCk).toBe(3);
+  });
+
+  it('computes maxCycles = n - 2*ckCount', () => {
+    const G = buildGameData('cuckoo', players7, entry, 3); // n=7
+    expect(G.maxCycles).toBe(1); // 7 - 2*3 = 1
+  });
+
+  it('falls back to the 1:3 ratio default when no count is given', () => {
+    const G = buildGameData('cuckoo', players7, entry); // n=7, no count arg
+    expect(G.numCk).toBe(2); // Math.max(1, Math.floor(7/3)) = 2
   });
 });
 
