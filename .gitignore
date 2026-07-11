@@ -1,4 +1,9 @@
 node_modules/
+dist/
 .env
 .DS_Store
 .claude/
+android/
+*.keystore
+*.jks
+docs/superpowers/plans/
