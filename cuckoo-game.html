@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuckoo</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a10;--surface:#13121a;--card:#1a1924;--border:#272535;
+  --accent:#e8445a;--teal:#2dd4bf;--yellow:#fbbf24;--purple:#a78bfa;
+  --text:#f0eeff;--muted:#6b6988;--radius:16px;
+}
+body{background:var(--bg);min-height:100vh;font-family:'Nunito',sans-serif;color:var(--text);padding:20px 16px 60px}
+.screen{display:none;flex-direction:column;align-items:center;gap:18px;max-width:720px;margin:0 auto}
+.screen.active{display:flex}
+
+/* LOGO */
+.logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.8rem,10vw,4.5rem);letter-spacing:5px;text-align:center;line-height:1}
+.wi{color:var(--accent)}.wc{color:var(--teal)}
+.tagline{color:var(--muted);font-size:.8rem;letter-spacing:2px;text-transform:uppercase;text-align:center;margin-top:-8px}
+
+/* MODE CARDS */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}
+.mode-card{border-radius:var(--radius);padding:22px 18px;border:2px solid var(--border);cursor:pointer;transition:transform .15s,border-color .2s,box-shadow .2s;background:var(--surface);text-align:center}
+.mode-card:hover{transform:translateY(-3px)}
+.mi{border-color:#3d1e26}.mi:hover{border-color:var(--accent);box-shadow:0 8px 28px rgba(232,68,90,.25)}
+.mc{border-color:#0e2e2c}.mc:hover{border-color:var(--teal);box-shadow:0 8px 28px rgba(45,212,191,.2)}
+.mode-icon{font-size:2.2rem;margin-bottom:10px}
+.mode-name{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:3px;margin-bottom:6px}
+.mi .mode-name{color:var(--accent)}.mc .mode-name{color:var(--teal)}
+.mode-desc{font-size:.75rem;color:var(--muted);line-height:1.5}
+
+/* SECTION CARD */
+.sc{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;width:100%}
+.st{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:2px;color:var(--muted);margin-bottom:14px}
+
+/* PLAYER LIST */
+.player-list{display:flex;flex-direction:column;gap:8px}
+.player-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:9px 12px;transition:border-color .2s}
+.player-row:focus-within{border-color:var(--accent)}
+.p-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3a2060,#6a40a0);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1rem;color:white;flex-shrink:0}
+.p-ni{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700}
+.rm-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 6px;border-radius:6px;transition:color .2s}
+.rm-btn:hover{color:var(--accent)}
+.add-btn{display:flex;align-items:center;gap:8px;background:transparent;border:2px dashed var(--border);border-radius:12px;padding:10px 14px;color:var(--muted);font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;width:100%;margin-top:8px;transition:border-color .2s,color .2s}
+.add-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* TOGGLES */
+.toggle-list{display:flex;flex-direction:column;gap:10px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border-radius:12px;padding:12px 14px}
+.tl{font-weight:700;font-size:.9rem}.td{font-size:.72rem;color:var(--muted);margin-top:2px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.ttrack{position:absolute;inset:0;background:var(--border);border-radius:99px;cursor:pointer;transition:background .25s}
+.toggle input:checked+.ttrack{background:var(--accent)}
+.ttrack::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:transform .25s}
+.toggle input:checked+.ttrack::after{transform:translateX(20px)}
+
+/* CATEGORY FILTER */
+.cat-filter{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.cat-chip{padding:6px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:border-color .2s,color .2s,background .2s;user-select:none}
+.cat-chip.active{border-color:var(--accent);color:var(--text);background:rgba(232,68,90,.15)}
+.cat-chip.teal.active{border-color:var(--teal);background:rgba(45,212,191,.15)}
+
+/* INFO BOX */
+.info-box{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px;font-size:.78rem;color:var(--muted);line-height:1.7;width:100%}
+.info-box strong{color:var(--text)}
+
+/* BUTTONS */
+.btn-p{background:var(--accent);color:white;border:none;padding:15px 40px;border-radius:50px;font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:3px;cursor:pointer;box-shadow:0 6px 28px rgba(232,68,90,.4);transition:transform .15s,box-shadow .2s,opacity .2s;width:100%;max-width:340px}
+.btn-p:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 36px rgba(232,68,90,.5)}
+.btn-p:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-p.teal{background:var(--teal);box-shadow:0 6px 28px rgba(45,212,191,.35);color:#0a0a10}
+.btn-p.teal:hover:not(:disabled){box-shadow:0 10px 36px rgba(45,212,191,.45)}
+.btn-o{background:transparent;border:2px solid var(--border);border-radius:50px;color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;cursor:pointer;padding:12px 32px;transition:border-color .2s,color .2s}
+.btn-o:hover{border-color:var(--text);color:var(--text)}
+.btn-sm{background:var(--card);border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:700;font-size:.82rem;padding:7px 14px;cursor:pointer;transition:color .2s,border-color .2s}
+.btn-sm:hover{color:var(--text);border-color:var(--muted)}
+.err{color:var(--accent);font-size:.82rem;font-weight:700;text-align:center;min-height:16px}
+
+/* PEEK */
+.peek-wrap{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:20px}
+.peek-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:100%;text-align:center}
+.pk-name{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;margin-bottom:6px}
+.pk-inst{font-size:.8rem;color:var(--muted);margin-bottom:20px}
+.pk-box{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.pk-word{font-size:1.6rem;font-weight:800;color:var(--yellow)}
+.pk-word.ck{color:var(--teal)}
+.pk-cat{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:3px 10px;background:rgba(255,255,255,.05);border-radius:99px}
+.pk-badge{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;padding:6px 18px;border-radius:99px;margin-bottom:4px}
+.pk-badge.imp{background:rgba(232,68,90,.15);color:var(--accent);border:1.5px solid var(--accent)}
+.pk-badge.ck{background:rgba(45,212,191,.15);color:var(--teal);border:1.5px solid var(--teal)}
+.pk-lock{font-size:2rem;color:var(--muted);margin-bottom:4px}
+.pk-lock-txt{font-size:.75rem;color:var(--muted)}
+.pk-prog{display:flex;gap:6px;margin-top:4px}
+.pk-dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.pk-dot.done{background:var(--teal)}.pk-dot.current{background:var(--yellow)}
+.pk-btn-unlock{background:var(--card);border:2px solid var(--teal);border-radius:14px;padding:14px 28px;color:var(--teal);font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;cursor:pointer;width:100%;transition:background .2s}
+.pk-btn-unlock:hover{background:rgba(45,212,191,.1)}
+.pk-btn-next{background:var(--accent);border:none;border-radius:14px;padding:14px 28px;color:white;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;cursor:pointer;width:100%;box-shadow:0 4px 20px rgba(232,68,90,.35);transition:opacity .2s}
+.pk-btn-next:hover{opacity:.9}
+.pk-btn-next.last{background:var(--teal);color:#0a0a10;box-shadow:0 4px 20px rgba(45,212,191,.35)}
+
+/* GAME */
+.topbar{width:100%;display:flex;align-items:center;justify-content:space-between}
+.gml{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:3px}
+.gml.imposter{color:var(--accent)}.gml.cuckoo{color:var(--teal)}
+
+/* STATUS */
+.status-bar{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 18px;width:100%;display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;line-height:1}
+.sv-r{color:var(--accent)}.sv-t{color:var(--teal)}.sv-y{color:var(--yellow)}.sv-p{color:var(--purple)}
+.stat-lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.sdiv{width:1px;background:var(--border)}
+
+/* CYCLE BAR */
+.cycle-bar{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.cycle-lbl{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;color:var(--muted);white-space:nowrap}
+.cycle-dots{display:flex;gap:6px}
+.cdot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background .3s}
+.cdot.done{background:var(--accent)}.cdot.current{background:var(--yellow)}
+
+/* CARDS GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;width:100%}
+.gp-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:16px 12px 12px;text-align:center;position:relative;overflow:hidden;transition:transform .15s,border-color .2s,box-shadow .2s}
+.gp-card.clickable{cursor:pointer}
+.gp-card.clickable:hover:not(.eliminated){transform:translateY(-2px);border-color:#3d3a55}
+.gp-card.eliminated{opacity:.3;filter:grayscale(1);cursor:default}
+.gp-card.selected-vote{border-color:var(--yellow);box-shadow:0 0 18px rgba(251,191,36,.35);background:#1e1d10}
+.gp-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#3a2060,#6a40a0);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.25rem;color:white}
+.gp-name{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:1.5px;margin-bottom:10px}
+.gp-cover{background:var(--border);border-radius:8px;padding:7px 8px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:5px}
+.elim-x{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.5rem;pointer-events:none}
+
+/* PHASE PANELS */
+.phase-panel{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:18px;width:100%}
+.pp-title{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--muted);margin-bottom:12px}
+
+/* Meta vote */
+.mvote-options{display:flex;gap:10px;margin-bottom:12px}
+.mvb{flex:1;padding:13px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Nunito',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:border-color .2s,background .2s}
+.mvb:hover{border-color:var(--yellow)}
+.mvb.selected-yes{border-color:var(--teal);background:rgba(45,212,191,.15);color:var(--teal)}
+.mvb.selected-no{border-color:var(--teal);background:rgba(45,212,191,.15);color:var(--teal)}
+.mvote-confirm{width:100%;padding:13px;border-radius:12px;border:none;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;cursor:pointer;background:var(--accent);color:white;box-shadow:0 4px 18px rgba(232,68,90,.4);transition:opacity .2s,transform .15s;display:none}
+.mvote-confirm:hover{transform:translateY(-1px)}
+.meta-note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:8px}
+
+/* Elimination vote */
+.vote-confirm-btn{width:100%;padding:15px;border-radius:14px;border:none;font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:3px;cursor:pointer;margin-top:14px;transition:background .3s,box-shadow .3s,transform .15s,opacity .3s;background:var(--border);color:var(--muted);opacity:.4;pointer-events:none}
+.vote-confirm-btn.ready{background:var(--accent);color:white;opacity:1;pointer-events:all;box-shadow:0 6px 28px rgba(232,68,90,.5)}
+.vote-confirm-btn.ready:hover{transform:translateY(-2px)}
+.vote-hint{font-size:.75rem;color:var(--muted);text-align:center;margin-top:8px}
+.tied-vote-btn{width:100%;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;margin-top:10px;transition:border-color .2s,color .2s}
+.tied-vote-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+
+/* Ready panel (cuckoo) */
+.ready-btn{width:100%;padding:13px;border-radius:12px;border:2px solid var(--teal);background:var(--card);color:var(--teal);font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:2px;cursor:pointer;transition:background .2s}
+.ready-btn:hover{background:rgba(45,212,191,.1)}
+
+/* REVEAL */
+.reveal-panel{background:var(--surface);border:2px solid var(--teal);border-radius:var(--radius);padding:20px;width:100%;text-align:center}
+.reveal-title{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--teal);margin-bottom:6px}
+.reveal-sub{font-size:.82rem;color:var(--muted);margin-bottom:16px}
+.reveal-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:12px;padding:10px 14px;margin-bottom:8px}
+.reveal-name{font-weight:800;font-size:.9rem}
+.reveal-word{font-weight:700;font-size:.9rem;color:var(--yellow)}
+.reveal-word.ck{color:var(--teal)}
+.reveal-badge{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:99px}
+.rb-ck{background:rgba(45,212,191,.2);color:var(--teal);border:1px solid var(--teal)}
+.rb-imp{background:rgba(232,68,90,.2);color:var(--accent);border:1px solid var(--accent)}
+.rb-pl{background:rgba(251,191,36,.05);color:var(--muted);border:1px solid var(--border)}
+
+/* GAME OVER */
+#go-screen{text-align:center}
+.go-icon{font-size:4rem}.go-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,8vw,3.5rem);letter-spacing:4px}
+.go-sub{color:var(--muted);font-size:.9rem;line-height:1.7;max-width:400px}
+.go-det{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 20px;width:100%;max-width:400px;text-align:left}
+.dr{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--border)}
+.dr:last-child{border:none}.dk{color:var(--muted)}.dv{font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="home-screen">
+  <div style="margin-top:20px">
+    <div class="logo"><span class="wi">IMPOSTER</span></div>
+    <div class="logo" style="margin-top:-8px"><span class="wc">CUCKOO</span></div>
+  </div>
+  <p class="tagline">Two games. One bluffer.</p>
+  <div class="mode-grid" style="margin-top:8px">
+    <div class="mode-card mi" onclick="selectMode('imposter')">
+      <div class="mode-icon">🕵️</div>
+      <div class="mode-name">Imposter</div>
+      <div class="mode-desc">One player gets no word. One chance to vote — majority decides.</div>
+    </div>
+    <div class="mode-card mc" onclick="selectMode('cuckoo')">
+      <div class="mode-icon">🐦</div>
+      <div class="mode-name">Cuckoo</div>
+      <div class="mode-desc">Everyone gets a word. Cuckoos blend in — they may not know they're different.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="screen" id="setup-screen">
+  <div class="topbar" style="width:100%">
+    <div class="gml" id="setup-mode-lbl">IMPOSTER</div>
+    <button class="btn-sm" onclick="goHome()">← Back</button>
+  </div>
+  <div class="sc">
+    <div class="st">👥 Players</div>
+    <div class="player-list" id="player-list"></div>
+    <button class="add-btn" onclick="addPlayer()">＋ Add Player</button>
+  </div>
+  <div class="sc">
+    <div class="st">📦 Word Categories</div>
+    <div class="cat-filter" id="cat-filter"></div>
+  </div>
+  <div class="sc">
+    <div class="st">⚙️ Options</div>
+    <div class="toggle-list" id="options-list"></div>
+  </div>
+  <div class="info-box" id="setup-info"></div>
+  <p class="err" id="err-msg"></p>
+  <button class="btn-p" id="start-btn" onclick="goToPeek()">SET UP WORDS</button>
+</div>
+
+<!-- PEEK -->
+<div class="screen" id="peek-screen">
+  <div class="topbar" style="width:100%">
+    <div class="gml" id="peek-mode-lbl">IMPOSTER</div>
+    <button class="btn-sm" onclick="goSetup()">← Setup</button>
+  </div>
+  <div class="peek-wrap">
+    <div class="peek-card" id="peek-card"></div>
+    <div class="pk-prog" id="pk-prog"></div>
+    <button class="pk-btn-unlock" id="pk-unlock-btn" onclick="unlockPeek()" style="display:none">🔓 I'm ready — show my word</button>
+    <button class="pk-btn-next" id="pk-next-btn" onclick="peekNext()" style="display:none">DONE → Pass to next player</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="game-screen">
+  <div class="topbar" style="width:100%">
+    <div class="gml" id="game-mode-lbl">IMPOSTER</div>
+    <button class="btn-sm" onclick="goHome()">✕ End Game</button>
+  </div>
+  <div class="status-bar" id="status-bar"></div>
+  <div class="cycle-bar" id="cycle-bar" style="display:none">
+    <div class="cycle-lbl">CYCLE</div>
+    <div class="cycle-dots" id="cycle-dots"></div>
+  </div>
+  <div class="cards-grid" id="cards-grid"></div>
+
+  <!-- Imposter: vote-to-vote -->
+  <div class="phase-panel" id="meta-vote-panel" style="display:none">
+    <div class="pp-title">END OF CYCLE — VOTE TO VOTE?</div>
+    <div class="mvote-options">
+      <button class="mvb" id="mvb-yes" onclick="selectMeta('yes')">👍 Yes, Vote</button>
+      <button class="mvb" id="mvb-no"  onclick="selectMeta('no')">👎 Skip</button>
+    </div>
+    <button class="mvote-confirm" id="mvote-confirm" onclick="confirmMeta()">CONFIRM</button>
+    <div class="meta-note" id="meta-note">Raise hands, then one person confirms the result.</div>
+  </div>
+
+  <!-- Cuckoo: ready to vote -->
+  <div class="phase-panel" id="ready-vote-panel" style="display:none">
+    <div class="pp-title">CYCLE COMPLETE</div>
+    <button class="ready-btn" onclick="startEliminationVote()">🗳️ Start Vote</button>
+    <div class="meta-note" style="margin-top:8px">Voting is mandatory each cycle.</div>
+  </div>
+
+  <!-- Elimination vote -->
+  <div class="phase-panel" id="vote-panel" style="display:none">
+    <div class="pp-title" id="vote-title">🗳️ TAP A PLAYER TO VOTE</div>
+    <div class="vote-hint" id="vote-hint">Tap a name to select. Tap another to change your mind.</div>
+    <button class="vote-confirm-btn" id="vote-confirm-btn" onclick="confirmElimination()">CONFIRM ELIMINATION</button>
+    <button class="tied-vote-btn" id="tied-vote-btn" onclick="confirmTiedVote()" style="display:none">🤝 Tied Vote — No Elimination</button>
+  </div>
+
+  <!-- Final reveal -->
+  <div class="reveal-panel" id="reveal-panel" style="display:none">
+    <div class="reveal-title" id="reveal-title">🎭 END OF GAME</div>
+    <div class="reveal-sub" id="reveal-sub"></div>
+    <button class="btn-p" style="margin-top:18px;max-width:100%" onclick="showGameOver()">SEE RESULTS</button>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div class="screen" id="go-screen">
+  <div class="go-icon" id="go-icon"></div>
+  <div class="go-title" id="go-title"></div>
+  <div class="go-sub" id="go-sub"></div>
+  <div class="go-det" id="go-det"></div>
+  <div class="go-det" id="go-player-reveal" style="margin-top:0"></div>
+  <button class="btn-p" onclick="goHome()" style="margin-top:8px">🏠 Main Menu</button>
+  <button class="btn-o" onclick="restartSame()">↺ Play Again</button>
+</div>
+
+<script>
+// ==================== WORDS ====================
+const ALL_WORDS = [
+  {cat:"Animal",w:["Dog","Wolf"]},{cat:"Animal",w:["Cat","Lynx"]},{cat:"Animal",w:["Frog","Toad"]},
+  {cat:"Animal",w:["Shark","Dolphin"]},{cat:"Animal",w:["Chicken","Duck"]},{cat:"Animal",w:["Horse","Donkey"]},
+  {cat:"Animal",w:["Cow","Bison"]},{cat:"Animal",w:["Rabbit","Hare"]},{cat:"Animal",w:["Bee","Wasp"]},
+  {cat:"Animal",w:["Owl","Hawk"]},{cat:"Animal",w:["Pig","Boar"]},{cat:"Animal",w:["Snake","Lizard"]},
+  {cat:"Animal",w:["Crab","Lobster"]},{cat:"Animal",w:["Elephant","Rhino"]},{cat:"Animal",w:["Lion","Tiger"]},
+  {cat:"Animal",w:["Penguin","Seal"]},{cat:"Animal",w:["Spider","Scorpion"]},{cat:"Animal",w:["Parrot","Crow"]},
+  {cat:"Animal",w:["Salmon","Trout"]},{cat:"Animal",w:["Gorilla","Chimp"]},
+  {cat:"Food",w:["Apple","Pear"]},{cat:"Food",w:["Pizza","Flatbread"]},{cat:"Food",w:["Banana","Mango"]},
+  {cat:"Food",w:["Bread","Toast"]},{cat:"Food",w:["Butter","Cheese"]},{cat:"Food",w:["Milk","Yogurt"]},
+  {cat:"Food",w:["Coffee","Tea"]},{cat:"Food",w:["Orange","Tangerine"]},{cat:"Food",w:["Honey","Jam"]},
+  {cat:"Food",w:["Soup","Stew"]},{cat:"Food",w:["Cake","Muffin"]},{cat:"Food",w:["Egg","Omelette"]},
+  {cat:"Food",w:["Rice","Couscous"]},{cat:"Food",w:["Pasta","Noodles"]},{cat:"Food",w:["Steak","Chop"]},
+  {cat:"Food",w:["Salad","Coleslaw"]},{cat:"Food",w:["Chocolate","Caramel"]},{cat:"Food",w:["Lemon","Lime"]},
+  {cat:"Food",w:["Strawberry","Cherry"]},{cat:"Food",w:["Popcorn","Chips"]},{cat:"Food",w:["Burger","Sandwich"]},
+  {cat:"Food",w:["Ice Cream","Gelato"]},{cat:"Food",w:["Garlic","Onion"]},{cat:"Food",w:["Mushroom","Truffle"]},
+  {cat:"Food",w:["Sushi","Sashimi"]},
+  {cat:"Object",w:["Chair","Stool"]},{cat:"Object",w:["Pillow","Cushion"]},{cat:"Object",w:["Key","Lock"]},
+  {cat:"Object",w:["Fork","Spoon"]},{cat:"Object",w:["Candle","Torch"]},{cat:"Object",w:["Sock","Glove"]},
+  {cat:"Object",w:["Mirror","Window"]},{cat:"Object",w:["Knife","Scissors"]},{cat:"Object",w:["Bottle","Jar"]},
+  {cat:"Object",w:["Bag","Backpack"]},{cat:"Object",w:["Clock","Watch"]},{cat:"Object",w:["Book","Magazine"]},
+  {cat:"Object",w:["Pen","Pencil"]},{cat:"Object",w:["Soap","Shampoo"]},{cat:"Object",w:["Blanket","Towel"]},
+  {cat:"Object",w:["Phone","Tablet"]},{cat:"Object",w:["Lamp","Flashlight"]},{cat:"Object",w:["Stairs","Ladder"]},
+  {cat:"Object",w:["Cup","Glass"]},{cat:"Object",w:["Box","Crate"]},
+  {cat:"Nature",w:["Rain","Snow"]},{cat:"Nature",w:["Sun","Moon"]},{cat:"Nature",w:["River","Stream"]},
+  {cat:"Nature",w:["Mountain","Hill"]},{cat:"Nature",w:["Forest","Jungle"]},{cat:"Nature",w:["Sand","Mud"]},
+  {cat:"Nature",w:["Cloud","Fog"]},{cat:"Nature",w:["Fire","Smoke"]},{cat:"Nature",w:["Cave","Tunnel"]},
+  {cat:"Nature",w:["Island","Peninsula"]},{cat:"Nature",w:["Wind","Storm"]},{cat:"Nature",w:["Leaf","Petal"]},
+  {cat:"Nature",w:["Stone","Brick"]},{cat:"Nature",w:["Ice","Frost"]},{cat:"Nature",w:["Desert","Dune"]},
+  {cat:"Vehicle",w:["Car","Truck"]},{cat:"Vehicle",w:["Bicycle","Scooter"]},{cat:"Vehicle",w:["Boat","Ferry"]},
+  {cat:"Vehicle",w:["Train","Tram"]},{cat:"Vehicle",w:["Plane","Helicopter"]},{cat:"Vehicle",w:["Motorbike","Quad"]},
+  {cat:"Vehicle",w:["Submarine","Yacht"]},
+  {cat:"Place",w:["Beach","Lake"]},{cat:"Place",w:["Market","Mall"]},{cat:"Place",w:["Hospital","Clinic"]},
+  {cat:"Place",w:["School","Library"]},{cat:"Place",w:["Restaurant","Café"]},{cat:"Place",w:["Park","Garden"]},
+  {cat:"Place",w:["Church","Temple"]},
+  {cat:"Clothing",w:["Hat","Cap"]},{cat:"Clothing",w:["Jacket","Coat"]},{cat:"Clothing",w:["Dress","Skirt"]},
+  {cat:"Clothing",w:["Boots","Sandals"]},{cat:"Clothing",w:["Scarf","Tie"]},
+];
+
+const ALL_CATS = [...new Set(ALL_WORDS.map(w=>w.cat))];
+
+// ==================== STATE ====================
+let mode=null;
+let players=[];
+let opts={};
+let activeCats=new Set(ALL_CATS); // all on by default
+let G={};
+let peekIdx=0,peekUnlocked=false;
+let metaSelection=null; // 'yes'|'no'
+let selectedVoteIdx=null;
+
+function rnd(n){return Math.floor(Math.random()*n)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a}
+
+// ==================== NAV ====================
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0)}
+function goHome(){show('home-screen')}
+function goSetup(){buildSetup();show('setup-screen')}
+function selectMode(m){mode=m;if(!players.length)initPlayers();buildSetup();show('setup-screen')}
+function restartSame(){buildSetup();show('setup-screen')}
+
+// ==================== PLAYERS ====================
+function initPlayers(){players=["Player 1","Player 2","Player 3"]}
+function renderPlayers(){
+  const list=document.getElementById('player-list');
+  list.innerHTML='';
+  players.forEach((name,i)=>{
+    const row=document.createElement('div');row.className='player-row';
+    const init=name.trim()?name.trim()[0].toUpperCase():'?';
+    row.innerHTML=`<div class="p-av" id="pav-${i}">${init}</div>
+      <input class="p-ni" value="${name}" placeholder="Player name"
+        oninput="players[${i}]=this.value;document.getElementById('pav-${i}').textContent=this.value.trim()?this.value.trim()[0].toUpperCase():'?';refreshInfo()">
+      <button class="rm-btn" onclick="removePlayer(${i})">✕</button>`;
+    list.appendChild(row);
+  });
+  refreshInfo();
+}
+function addPlayer(){players.push('Player '+(players.length+1));renderPlayers()}
+function removePlayer(i){if(players.length<=2)return;players.splice(i,1);renderPlayers()}
+function refreshInfo(){
+  const n=players.length;
+  if(mode==='imposter'){
+    document.getElementById('setup-info').innerHTML=
+      `<strong>How it works:</strong> One player is the Imposter — they get no word, just the category (if enabled). Everyone gives associations each cycle. At the end of a cycle, raise hands to vote whether to eliminate someone. Strict majority wins — ties skip the vote. If you vote, one elimination happens and the game ends, win or lose.`;
+  } else {
+    const c=Math.max(1,Math.floor(n/3));
+    const stopAt=Math.ceil(n/2);
+    const maxCycles=n-stopAt;
+    document.getElementById('setup-info').innerHTML=
+      `<strong>How it works:</strong> Everyone gets a word. <strong>${c} cuckoo${c>1?'s':''}</strong> get a similar-but-different word and may not know it. Vote each cycle — person with most votes is out. Players win by eliminating all cuckoos before they are outnumbered. Cuckoos win if their count equals or exceeds remaining regular players. With ${n} players: up to <strong>${maxCycles} cycle${maxCycles!==1?'s':''}</strong>.`;
+  }
+}
+
+// ==================== CAT FILTER ====================
+function renderCatFilter(){
+  const cf=document.getElementById('cat-filter');
+  cf.innerHTML='';
+  const isCk=mode==='cuckoo';
+  ALL_CATS.forEach(cat=>{
+    const chip=document.createElement('div');
+    chip.className='cat-chip'+(activeCats.has(cat)?' active':'')+(isCk?' teal':'');
+    chip.textContent=cat;
+    chip.onclick=()=>{
+      if(activeCats.has(cat)){if(activeCats.size>1)activeCats.delete(cat);}
+      else activeCats.add(cat);
+      renderCatFilter();
+    };
+    cf.appendChild(chip);
+  });
+}
+
+// ==================== SETUP ====================
+function buildSetup(){
+  const isI=mode==='imposter';
+  document.getElementById('setup-mode-lbl').textContent=isI?'IMPOSTER':'CUCKOO';
+  document.getElementById('setup-mode-lbl').className='gml '+mode;
+  document.getElementById('start-btn').className='btn-p'+(isI?'':' teal');
+  renderCatFilter();
+  const ol=document.getElementById('options-list');ol.innerHTML='';
+  if(isI){
+    addToggle(ol,'opt-cat','Show Category to Imposter','e.g. "Food", "Animal" — vague, not the word',true);
+  } else {
+    addToggle(ol,'opt-show-ck','Tell Cuckoos they are Cuckoos','Off = blind mode: cuckoos don\'t know they\'re different',false);
+    addToggle(ol,'opt-cat-ck','Show Category on Cards','Show the word category on each player\'s card',true);
+  }
+  renderPlayers();
+}
+function addToggle(parent,id,label,desc,checked){
+  const r=document.createElement('div');r.className='toggle-row';
+  r.innerHTML=`<div><div class="tl">${label}</div><div class="td">${desc}</div></div>
+    <label class="toggle"><input type="checkbox" id="${id}" ${checked?'checked':''}><div class="ttrack"></div></label>`;
+  parent.appendChild(r);
+}
+
+// ==================== PEEK ====================
+function goToPeek(){
+  const names=players.map(p=>p.trim()).filter(Boolean);
+  if(names.length<3){document.getElementById('err-msg').textContent='Need at least 3 players!';return;}
+  document.getElementById('err-msg').textContent='';
+  players=names;
+  opts={
+    showCatImp:document.getElementById('opt-cat')?document.getElementById('opt-cat').checked:false,
+    showCkToSelf:document.getElementById('opt-show-ck')?document.getElementById('opt-show-ck').checked:false,
+    showCatCk:document.getElementById('opt-cat-ck')?document.getElementById('opt-cat-ck').checked:true,
+  };
+  buildGameData();
+  peekIdx=0;peekUnlocked=false;
+  document.getElementById('peek-mode-lbl').textContent=mode==='imposter'?'IMPOSTER':'CUCKOO';
+  document.getElementById('peek-mode-lbl').className='gml '+mode;
+  renderPeekProgress();renderPeekCard();
+  show('peek-screen');
+}
+
+function buildGameData(){
+  const pool=ALL_WORDS.filter(w=>activeCats.has(w.cat));
+  const entry=pool[rnd(pool.length)];
+  const n=players.length;
+  if(mode==='imposter'){
+    const impIdx=rnd(n);
+    G={mode:'imposter',entry,
+      players:players.map((name,i)=>({name,isImposter:i===impIdx,eliminated:false,word:i===impIdx?null:entry.w[0]})),
+      cycle:1,phase:'play',_endResult:null};
+  } else {
+    const numCk=Math.max(1,Math.floor(n/3));
+    const idxs=shuffle([...Array(n).keys()]);
+    const ckSet=new Set(idxs.slice(0,numCk));
+    const stopAt=Math.ceil(n/2);
+    G={mode:'cuckoo',entry,numCk,stopAt,maxCycles:n-stopAt,
+      players:players.map((name,i)=>({name,isCuckoo:ckSet.has(i),eliminated:false,word:ckSet.has(i)?entry.w[1]:entry.w[0]})),
+      cycle:1,phase:'play',_endResult:null};
+  }
+}
+
+function renderPeekProgress(){
+  const prog=document.getElementById('pk-prog');prog.innerHTML='';
+  G.players.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='pk-dot'+(i<peekIdx?' done':i===peekIdx?' current':'');
+    prog.appendChild(d);
+  });
+}
+
+function renderPeekCard(){
+  const p=G.players[peekIdx];
+  const isLast=peekIdx===G.players.length-1;
+  const card=document.getElementById('peek-card');
+  if(!peekUnlocked){
+    card.innerHTML=`<div class="pk-name">${p.name}</div>
+      <div class="pk-inst">Pass the phone to <strong>${p.name}</strong></div>
+      <div class="pk-box"><div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div class="pk-lock">🔒</div><div class="pk-lock-txt">Word hidden — tap below to reveal</div>
+      </div></div>`;
+    document.getElementById('pk-unlock-btn').style.display='block';
+    document.getElementById('pk-next-btn').style.display='none';
+  } else {
+    let wordHTML='';
+    if(mode==='imposter'){
+      if(p.isImposter){
+        wordHTML=`<div class="pk-badge imp">IMPOSTER</div>`;
+        if(opts.showCatImp) wordHTML+=`<div class="pk-cat">${G.entry.cat}</div>`;
+        wordHTML+=`<div style="font-size:.75rem;color:var(--muted);margin-top:4px">You have no word. Bluff carefully.</div>`;
+      } else {
+        wordHTML=`<div class="pk-word">${p.word}</div><div class="pk-cat">${G.entry.cat}</div>`;
+      }
+    } else {
+      if(p.isCuckoo&&opts.showCkToSelf){
+        wordHTML=`<div class="pk-badge ck">CUCKOO</div><div class="pk-word ck">${p.word}</div>`;
+        if(opts.showCatCk) wordHTML+=`<div class="pk-cat">${G.entry.cat}</div>`;
+      } else {
+        wordHTML=`<div class="pk-word">${p.word}</div>`;
+        if(opts.showCatCk) wordHTML+=`<div class="pk-cat">${G.entry.cat}</div>`;
+      }
+    }
+    card.innerHTML=`<div class="pk-name">${p.name}</div>
+      <div class="pk-inst">Memorise your word, then pass the phone.</div>
+      <div class="pk-box">${wordHTML}</div>`;
+    document.getElementById('pk-unlock-btn').style.display='none';
+    const nb=document.getElementById('pk-next-btn');
+    nb.style.display='block';
+    nb.textContent=isLast?'🎮 START GAME':'DONE → Pass to next player';
+    nb.className='pk-btn-next'+(isLast?' last':'');
+  }
+}
+function unlockPeek(){peekUnlocked=true;renderPeekCard()}
+function peekNext(){
+  peekIdx++;
+  if(peekIdx>=G.players.length){show('game-screen');renderGame();}
+  else{peekUnlocked=false;renderPeekProgress();renderPeekCard();}
+}
+
+// ==================== GAME RENDER ====================
+function renderGame(){
+  const isI=G.mode==='imposter';
+  document.getElementById('game-mode-lbl').textContent=isI?'IMPOSTER':'CUCKOO';
+  document.getElementById('game-mode-lbl').className='gml '+G.mode;
+  renderStatus();renderCycleBar();renderCards();renderPhaseUI();
+}
+
+function renderStatus(){
+  const bar=document.getElementById('status-bar');
+  const active=G.players.filter(p=>!p.eliminated).length;
+  if(G.mode==='imposter'){
+    bar.innerHTML=`<div class="stat"><div class="stat-val sv-y">${active}</div><div class="stat-lbl">Active</div></div>
+      <div class="sdiv"></div>
+      <div class="stat"><div class="stat-val sv-r">1</div><div class="stat-lbl">Imposter</div></div>
+      <div class="sdiv"></div>
+      <div class="stat"><div class="stat-val sv-p">${G.entry.cat}</div><div class="stat-lbl">Category</div></div>
+      <div class="sdiv"></div>
+      <div class="stat"><div class="stat-val sv-y">${G.cycle}</div><div class="stat-lbl">Cycle</div></div>`;
+  } else {
+    const ck=G.numCk; // frozen at start — don't reveal if cuckoo was eliminated
+    const pl=G.players.filter(p=>!p.isCuckoo&&!p.eliminated).length;
+    bar.innerHTML=`<div class="stat"><div class="stat-val sv-y">${pl}</div><div class="stat-lbl">Players</div></div>
+      <div class="sdiv"></div>
+      <div class="stat"><div class="stat-val sv-t">${ck}</div><div class="stat-lbl">Cuckoos</div></div>
+      <div class="sdiv"></div>
+      <div class="stat"><div class="stat-val sv-p">${G.entry.cat}</div><div class="stat-lbl">Category</div></div>
+      <div class="sdiv"></div>
+      <div class="stat"><div class="stat-val sv-y">${G.cycle}/${G.maxCycles}</div><div class="stat-lbl">Cycle</div></div>`;
+  }
+}
+
+function renderCycleBar(){
+  const bar=document.getElementById('cycle-bar');
+  if(G.mode==='imposter'){bar.style.display='none';return;}
+  bar.style.display='flex';
+  const dots=document.getElementById('cycle-dots');dots.innerHTML='';
+  for(let i=1;i<=G.maxCycles;i++){
+    const d=document.createElement('div');
+    d.className='cdot'+(i<G.cycle?' done':i===G.cycle?' current':'');
+    dots.appendChild(d);
+  }
+}
+
+function renderCards(){
+  const grid=document.getElementById('cards-grid');grid.innerHTML='';
+  const isVoting=G.phase==='vote';
+  G.players.forEach((p,i)=>{
+    const card=document.createElement('div');
+    let cls='gp-card';
+    if(p.eliminated) cls+=' eliminated';
+    else if(isVoting) cls+=' clickable';
+    if(isVoting&&!p.eliminated&&selectedVoteIdx===i) cls+=' selected-vote';
+    card.className=cls;
+    const init=p.name[0].toUpperCase();
+    let content='';
+    if(p.eliminated){
+      content=`<div class="elim-x">❌</div><div class="gp-cover">OUT</div>`;
+    } else if(isVoting){
+      content=`<div class="gp-cover" style="background:${selectedVoteIdx===i?'rgba(251,191,36,.15)':'var(--border)'};border-radius:8px;padding:7px 8px;font-size:.75rem;color:${selectedVoteIdx===i?'var(--yellow)':'var(--muted)'};letter-spacing:1px;display:flex;align-items:center;justify-content:center">
+        ${selectedVoteIdx===i?'✓ SELECTED':'TAP TO VOTE'}
+      </div>`;
+    } else {
+      content=`<div class="gp-cover">🔒 Hidden</div>`;
+    }
+    card.innerHTML=`<div class="gp-av">${init}</div><div class="gp-name">${p.name}</div>${content}`;
+    if(isVoting&&!p.eliminated){card.onclick=()=>selectVote(i);}
+    grid.appendChild(card);
+  });
+}
+
+// ==================== PHASE UI ====================
+function renderPhaseUI(){
+  document.getElementById('meta-vote-panel').style.display='none';
+  document.getElementById('ready-vote-panel').style.display='none';
+  document.getElementById('vote-panel').style.display='none';
+  document.getElementById('reveal-panel').style.display='none';
+  metaSelection=null;
+  selectedVoteIdx=null;
+
+  if(G.phase==='play'){
+    if(G.mode==='imposter'){
+      document.getElementById('meta-vote-panel').style.display='block';
+      document.getElementById('mvb-yes').className='mvb';
+      document.getElementById('mvb-no').className='mvb';
+      document.getElementById('mvote-confirm').style.display='none';
+      const active=G.players.filter(p=>!p.eliminated).length;
+      document.getElementById('meta-note').textContent=`Raise hands — strict majority (>${Math.floor(active/2)}) needed to vote. Ties = Skip.`;
+    } else {
+      document.getElementById('ready-vote-panel').style.display='block';
+    }
+  } else if(G.phase==='vote'){
+    document.getElementById('vote-panel').style.display='block';
+    document.getElementById('vote-title').textContent=
+      G.mode==='imposter'?'🗳️ WHO IS THE IMPOSTER?':'🗳️ WHO IS THE CUCKOO?';
+    document.getElementById('vote-confirm-btn').classList.remove('ready');
+    document.getElementById('vote-hint').textContent='Tap a name to select. Tap another to change your mind.';
+    // Show tied vote button only in imposter mode
+    const tvb=document.getElementById('tied-vote-btn');
+    if(tvb) tvb.style.display=G.mode==='imposter'?'block':'none';
+  }
+}
+
+// ==================== META VOTE (IMPOSTER) ====================
+function selectMeta(choice){
+  metaSelection=choice;
+  document.getElementById('mvb-yes').className='mvb'+(choice==='yes'?' selected-yes':'');
+  document.getElementById('mvb-no').className='mvb'+(choice==='no'?' selected-no':'');
+  document.getElementById('mvote-confirm').style.display='block';
+}
+function confirmMeta(){
+  if(!metaSelection)return;
+  if(metaSelection==='yes'){
+    G.phase='vote';selectedVoteIdx=null;
+    renderCards();renderPhaseUI();
+  } else {
+    G.cycle++;G.phase='play';renderGame();
+  }
+}
+
+// ==================== VOTE ====================
+function startEliminationVote(){
+  G.phase='vote';selectedVoteIdx=null;
+  renderCards();renderPhaseUI();
+}
+function selectVote(idx){
+  selectedVoteIdx=idx;
+  renderCards();
+  document.getElementById('vote-confirm-btn').classList.add('ready');
+  document.getElementById('vote-hint').textContent=`Selected: ${G.players[idx].name}. Tap another to change.`;
+}
+function confirmElimination(){
+  if(selectedVoteIdx===null)return;
+  G.players[selectedVoteIdx].eliminated=true;
+  G.phase='play';
+
+  const result=checkEnd();
+
+  if(G.mode==='imposter'){
+    // Game always ends after one vote in imposter mode
+    triggerFinalReveal(result==='continue'?'no_result':result);
+  } else {
+    if(result==='players_win'||result==='cuckoo_wins'){
+      triggerFinalReveal(result);
+    } else {
+      // Check tie: if it was a tie in cuckoo, just continue without penalty
+      // (tie handling: all tied = re-run, but we already eliminated — note: tie = valid, move on)
+      G.cycle++;renderGame();
+    }
+  }
+}
+
+function confirmTiedVote(){
+  // Tied vote in imposter mode — no elimination, game still ends (one shot)
+  G._endResult='tied';
+  triggerFinalReveal('tied');
+}
+
+function checkEnd(){
+  if(G.mode==='imposter'){
+    const imp=G.players.find(p=>p.isImposter&&p.eliminated);
+    return imp?'players_win':'imposter_wins';
+  } else {
+    const ckLeft=G.players.filter(p=>p.isCuckoo&&!p.eliminated).length;
+    const plLeft=G.players.filter(p=>!p.isCuckoo&&!p.eliminated).length;
+    if(ckLeft===0)return'players_win';
+    if(ckLeft>=plLeft)return'cuckoo_wins';
+    return'continue';
+  }
+}
+
+// ==================== REVEAL ====================
+function triggerFinalReveal(result){
+  G._endResult=result;
+  G.phase='reveal';
+  document.getElementById('meta-vote-panel').style.display='none';
+  document.getElementById('ready-vote-panel').style.display='none';
+  document.getElementById('vote-panel').style.display='none';
+  renderCards();renderStatus();
+
+  const rp=document.getElementById('reveal-panel');rp.style.display='block';
+
+  let title='🎭 END OF GAME';
+  let sub='';
+  if(result==='players_win') sub='The right person was eliminated. Tap "See Results" to reveal everyone\'s words.';
+  else if(result==='imposter_wins') sub='The wrong person was eliminated — the imposter survived. Tap "See Results" to see the truth.';
+  else if(result==='cuckoo_wins') sub='The cuckoos blended in long enough. Tap "See Results" to reveal who was who.';
+  else if(result==='tied') sub='The vote was tied — no one was eliminated. The game ends here. Tap "See Results" to reveal.';
+  else sub='Tap "See Results" to reveal everyone\'s words.';
+
+  document.getElementById('reveal-title').textContent=title;
+  document.getElementById('reveal-sub').textContent=sub;
+}
+
+// ==================== GAME OVER ====================
+function showGameOver(){
+  const result=G._endResult;
+  show('go-screen');
+  const icons={players_win:'🏆',imposter_wins:'🕵️',cuckoo_wins:'🐦',no_result:'🎭',tied:'🤝'};
+  const titles={players_win:'PLAYERS WIN!',imposter_wins:'IMPOSTER WINS!',cuckoo_wins:'CUCKOOS WIN!',no_result:'ROUND OVER',tied:'TIED VOTE'};
+  const colors={players_win:'var(--teal)',imposter_wins:'var(--accent)',cuckoo_wins:'var(--teal)',no_result:'var(--purple)',tied:'var(--yellow)'};
+  document.getElementById('go-icon').textContent=icons[result]||'🎭';
+  document.getElementById('go-title').textContent=titles[result]||'GAME OVER';
+  document.getElementById('go-title').style.color=colors[result]||'var(--text)';
+  document.getElementById('go-sub').textContent=`After ${G.cycle} cycle${G.cycle!==1?'s':''} with ${G.players.length} players.`;
+  const imp=G.mode==='imposter'?G.players.find(p=>p.isImposter):null;
+  const cks=G.mode==='cuckoo'?G.players.filter(p=>p.isCuckoo):[];
+  let rows=`<div class="dr"><span class="dk">Mode</span><span class="dv">${G.mode==='imposter'?'Imposter':'Cuckoo'}</span></div>
+    <div class="dr"><span class="dk">Category</span><span class="dv">${G.entry.cat}</span></div>
+    <div class="dr"><span class="dk">Players' word</span><span class="dv">${G.entry.w[0]}</span></div>`;
+  if(G.mode==='imposter'){
+    rows+=`<div class="dr"><span class="dk">Imposter was</span><span class="dv">${imp.name}</span></div>`;
+  } else {
+    rows+=`<div class="dr"><span class="dk">Cuckoo word</span><span class="dv">${G.entry.w[1]}</span></div>
+      <div class="dr"><span class="dk">Cuckoos were</span><span class="dv">${cks.map(p=>p.name).join(', ')}</span></div>`;
+  }
+  rows+=`<div class="dr"><span class="dk">Cycles played</span><span class="dv">${G.cycle}</span></div>`;
+  document.getElementById('go-det').innerHTML=rows;
+
+  // Player reveal table
+  const pr=document.getElementById('go-player-reveal');
+  let prHTML='';
+  G.players.forEach(p=>{
+    const isCk=G.mode==='cuckoo'&&p.isCuckoo;
+    const isImp=G.mode==='imposter'&&p.isImposter;
+    const wordDisplay=isImp?'—':p.word;
+    const badge=isCk?`<span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:99px;background:rgba(45,212,191,.2);color:var(--teal);border:1px solid var(--teal)">CUCKOO</span>`:
+      isImp?`<span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:99px;background:rgba(232,68,90,.2);color:var(--accent);border:1px solid var(--accent)">IMPOSTER</span>`:
+      `<span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:99px;background:transparent;color:var(--muted);border:1px solid var(--border)">PLAYER</span>`;
+    prHTML+=`<div class="dr"><span class="dk" style="font-weight:800;color:var(--text)">${p.name}${p.eliminated?' ❌':''}</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="font-weight:700;color:${isCk?'var(--teal)':'var(--yellow)'}">${wordDisplay}</span>${badge}</span></div>`;
+  });
+  pr.innerHTML=prHTML;
+}
+
+// ==================== INIT ====================
+initPlayers();
+</script>
+</body>
+</html>
