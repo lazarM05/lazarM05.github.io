@@ -434,8 +434,6 @@ function renderStatus() {
       </div>
       <div class="sdiv"></div>
       <div class="status-right">
-        <div class="stat"><div class="stat-val sv-p">${G.entry.cat}</div><div class="stat-lbl">Category</div></div>
-        <div class="sdiv"></div>
         <div class="stat"><div class="stat-val sv-y">${G.cycle}/${G.maxCycles}</div><div class="stat-lbl">Cycle</div></div>
       </div>`;
   } else {
