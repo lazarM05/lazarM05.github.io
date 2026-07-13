@@ -341,17 +341,30 @@ function renderPeekCard() {
       } else {
         wordHTML = `<div class="pk-word">${p.word}</div><div class="pk-cat">${G.entry.cat}</div>`;
       }
+    } else if (mode === 'reverse') {
+      if (p.isImposter) {
+        wordHTML = `<div class="pk-badge imp">IMPOSTER</div>
+          <div class="pk-word" style="margin-top:8px">${G.secretWord}</div>`;
+        if (opts.impKnow && G.impCount > 1) {
+          const teammates = G.players.filter(o => o.isImposter && o !== p).map(o => o.name);
+          wordHTML += `<div class="pk-imp-plus">+</div>
+            <div class="pk-imp-team">${teammates.map(nm => `<div>${nm}</div>`).join('')}</div>`;
+        }
+        wordHTML += `<div style="font-size:.75rem;color:var(--muted);margin-top:4px">Invent a misleading hint toward this word.</div>`;
+      } else {
+        wordHTML = `<div class="pk-word">Hint ${G.cycle}${p.hintGroup}</div>`;
+      }
     } else {
       wordHTML = `<div class="pk-word">${p.word}</div>`;
       if (opts.showCatCk) wordHTML += `<div class="pk-cat">${G.entry.cat}</div>`;
     }
     card.innerHTML = `<div class="pk-name">${p.name}</div>
-      <div class="pk-inst">Memorise your word, then pass the phone.</div>
+      <div class="pk-inst">Memorise your ${mode === 'reverse' ? 'hint' : 'word'}, then pass the phone.</div>
       <div class="pk-box">${wordHTML}</div>`;
     document.getElementById('pk-unlock-btn').style.display = 'none';
     const nb = document.getElementById('pk-next-btn');
     nb.style.display = 'block';
-    nb.textContent = isLast ? '🎮 START GAME' : 'DONE → Pass to next player';
+    nb.textContent = isLast ? (mode === 'reverse' && G.cycle > 1 ? '▶ CONTINUE' : '🎮 START GAME') : 'DONE → Pass to next player';
     nb.className = 'pk-btn-next' + (isLast ? ' last' : '');
   }
 }
@@ -483,6 +496,25 @@ function renderPhaseUI() {
     document.getElementById('skip-vote-btn').style.display = G.mode === 'imposter' ? 'block' : 'none';
     document.getElementById('guess-btn').style.display = G.mode === 'imposter' ? 'block' : 'none';
   }
+}
+
+// ==================== CYCLE (reverse mode) ====================
+// Cycle advancement is decoupled from voting/guessing in reverse mode — it's
+// its own action, triggered by the "NEXT CYCLE" button. Reuses the peek-screen
+// flow to distribute the new cycle's hints, but must NOT call buildGameData()
+// again (that would reshuffle roles) — only G.cycle changes here, everything
+// else (eliminations, guesses/votes left) carries over untouched.
+export function nextCycle() {
+  G.cycle++;
+  if (G.cycle > G.maxCycles) {
+    triggerFinalReveal('imposter_win_cycle');
+    return;
+  }
+  peekIdx = 0;
+  peekUnlocked = false;
+  renderPeekProgress();
+  renderPeekCard();
+  show('peek-screen');
 }
 
 // ==================== VOTE ====================
