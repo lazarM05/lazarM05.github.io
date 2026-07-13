@@ -114,11 +114,22 @@
 
   <!-- Vote / elimination panel — cards are clickable from the start of every cycle -->
   <div class="phase-panel" id="vote-panel" style="display:none">
+    <!-- Reverse mode: guess-the-word section -->
+    <div class="guess-section" id="guess-section" style="display:none">
+      <div class="pp-title" id="guess-title">🎯 GUESS THE WORD</div>
+      <div class="guess-row">
+        <input type="text" class="guess-input" id="guess-input" placeholder="Type the word..." onkeydown="if(event.key==='Enter')submitGuess()">
+        <button class="guess-submit-btn" id="guess-submit-btn" onclick="submitGuess()">GUESS</button>
+      </div>
+      <div class="guess-count" id="guess-count"></div>
+    </div>
     <div class="pp-title" id="vote-title">🗳️ TAP A PLAYER TO VOTE</div>
     <div class="vote-hint" id="vote-hint">Tap a name to select. Tap another to change your mind.</div>
+    <div class="vote-count" id="vote-count" style="display:none"></div>
     <button class="vote-confirm-btn" id="vote-confirm-btn" onclick="confirmElimination()">CONFIRM ELIMINATION</button>
     <button class="skip-vote-btn" id="skip-vote-btn" onclick="skipVote()" style="display:none">👎 Skip</button>
     <button class="guess-btn" id="guess-btn" onclick="imposterGuessedWord()" style="display:none">🎯 Imposter Guessed The Word</button>
+    <button class="next-cycle-btn" id="next-cycle-btn" onclick="nextCycle()" style="display:none">NEXT CYCLE ▶</button>
   </div>
 
   <!-- Final reveal -->

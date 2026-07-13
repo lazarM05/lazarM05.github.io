@@ -17,6 +17,7 @@ Object.assign(window, {
   skipVote: ui.skipVote,
   confirmElimination: ui.confirmElimination,
   nextCycle: ui.nextCycle,
+  submitGuess: ui.submitGuess,
   showGameOver: ui.showGameOver,
   playAgain: ui.playAgain,
   onImpAutoToggle: ui.onImpAutoToggle,

@@ -384,8 +384,7 @@ export function peekNext() {
 
 // ==================== GAME RENDER ====================
 function renderGame() {
-  const isI = G.mode === 'imposter';
-  document.getElementById('game-mode-lbl').textContent = isI ? 'STANDARD' : 'CUCKOO';
+  document.getElementById('game-mode-lbl').textContent = { imposter: 'STANDARD', cuckoo: 'CUCKOO', reverse: 'REVERSE' }[G.mode];
   document.getElementById('game-mode-lbl').className = 'gml ' + G.mode;
   renderStatus();
   renderCycleBar();
@@ -417,6 +416,26 @@ function renderStatus() {
         <div class="stat"><div class="stat-val sv-p">${G.entry.cat}</div><div class="stat-lbl">Category</div></div>
         <div class="sdiv"></div>
         <div class="stat"><div class="stat-val sv-y">${G.cycle}</div><div class="stat-lbl">Cycle</div></div>
+      </div>`;
+  } else if (G.mode === 'reverse') {
+    const startingPl = n - G.impCount;
+    const activePl = G.players.filter(p => !p.isImposter && !p.eliminated).length;
+    const plVal = opts.liveStats ? `${activePl}/${startingPl}` : `${startingPl}`;
+    const impAlive = G.players.filter(p => p.isImposter && !p.eliminated).length;
+    const impVal = opts.liveStats ? `${impAlive}/${G.impCount}` : `${G.impCount}`;
+    const impLbl = G.impCount > 1 ? 'Imposters' : 'Imposter';
+    bar.innerHTML = `<div class="status-left">
+        ${noteHTML}
+        <div class="stat-pair-box${liveCls}">
+          <div class="stat"><div class="stat-val sv-y">${plVal}</div><div class="stat-lbl">Players</div></div>
+          <div class="stat"><div class="stat-val sv-r">${impVal}</div><div class="stat-lbl">${impLbl}</div></div>
+        </div>
+      </div>
+      <div class="sdiv"></div>
+      <div class="status-right">
+        <div class="stat"><div class="stat-val sv-p">${G.entry.cat}</div><div class="stat-lbl">Category</div></div>
+        <div class="sdiv"></div>
+        <div class="stat"><div class="stat-val sv-y">${G.cycle}/${G.maxCycles}</div><div class="stat-lbl">Cycle</div></div>
       </div>`;
   } else {
     const startingPl = n - G.numCk;
@@ -456,7 +475,9 @@ function renderCycleBar() {
 function renderCards() {
   const grid = document.getElementById('cards-grid');
   grid.innerHTML = '';
-  const isVoting = G.phase === 'play';
+  const isVoting = G.mode === 'reverse'
+    ? (G.phase === 'play' && G.votesLeft > 0)
+    : G.phase === 'play';
   G.players.forEach((p, i) => {
     const card = document.createElement('div');
     let cls = 'gp-card';
@@ -485,16 +506,39 @@ function renderCards() {
 function renderPhaseUI() {
   document.getElementById('vote-panel').style.display = 'none';
   document.getElementById('reveal-panel').style.display = 'none';
+  document.getElementById('guess-section').style.display = 'none';
+  document.getElementById('vote-count').style.display = 'none';
+  document.getElementById('next-cycle-btn').style.display = 'none';
   selectedVoteIdx = null;
 
   if (G.phase === 'play') {
     document.getElementById('vote-panel').style.display = 'block';
     document.getElementById('vote-title').textContent =
-      G.mode === 'imposter' ? '🗳️ WHO IS THE IMPOSTER?' : '🗳️ WHO IS THE CUCKOO?';
+      G.mode === 'cuckoo' ? '🗳️ WHO IS THE CUCKOO?' : '🗳️ WHO IS THE IMPOSTER?';
     document.getElementById('vote-confirm-btn').classList.remove('ready');
     document.getElementById('vote-hint').textContent = 'Tap a name to select. Tap another to change your mind.';
     document.getElementById('skip-vote-btn').style.display = G.mode === 'imposter' ? 'block' : 'none';
     document.getElementById('guess-btn').style.display = G.mode === 'imposter' ? 'block' : 'none';
+
+    if (G.mode === 'reverse') {
+      document.getElementById('guess-section').style.display = 'block';
+      document.getElementById('guess-input').value = '';
+      document.getElementById('guess-count').textContent = `${G.guessesLeft}/3 guesses left`;
+      document.getElementById('vote-count').style.display = 'block';
+      document.getElementById('vote-count').textContent = `${G.votesLeft} vote${G.votesLeft !== 1 ? 's' : ''} left`;
+      document.getElementById('next-cycle-btn').style.display = 'block';
+      document.getElementById('next-cycle-btn').textContent =
+        G.cycle >= G.maxCycles ? 'FINAL CYCLE — NEXT ▶' : 'NEXT CYCLE ▶';
+      if (G.votesLeft <= 0) {
+        document.getElementById('vote-title').style.display = 'none';
+        document.getElementById('vote-hint').style.display = 'none';
+        document.getElementById('vote-confirm-btn').style.display = 'none';
+      } else {
+        document.getElementById('vote-title').style.display = 'block';
+        document.getElementById('vote-hint').style.display = 'block';
+        document.getElementById('vote-confirm-btn').style.display = 'block';
+      }
+    }
   }
 }
 
@@ -534,6 +578,17 @@ export function confirmElimination() {
   G.players[selectedVoteIdx].eliminated = true;
   G.phase = 'play';
 
+  if (G.mode === 'reverse') {
+    G.votesLeft--;
+    const result = checkEnd(G);
+    if (result === 'continue') {
+      renderGame();
+    } else {
+      triggerFinalReveal(result);
+    }
+    return;
+  }
+
   const result = checkEnd(G);
   if (result === 'continue') {
     G.cycle++;
@@ -544,6 +599,24 @@ export function confirmElimination() {
 }
 
 export function imposterGuessedWord() { triggerFinalReveal('imposter_guessed'); }
+
+// ==================== GUESS (reverse mode) ====================
+export function submitGuess() {
+  const input = document.getElementById('guess-input');
+  const guess = input.value.trim().toLowerCase();
+  if (!guess) return;
+  G.guessesLeft--;
+  if (guess === G.secretWord.trim().toLowerCase()) {
+    triggerFinalReveal('players_win_guess');
+    return;
+  }
+  if (G.guessesLeft <= 0) {
+    triggerFinalReveal('imposter_win_guesses');
+    return;
+  }
+  input.value = '';
+  document.getElementById('guess-count').textContent = `${G.guessesLeft}/3 guesses left`;
+}
 
 // ==================== REVEAL ====================
 function triggerFinalReveal(result) {
