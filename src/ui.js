@@ -187,7 +187,7 @@ function refreshInfo() {
     const impCountEl = document.getElementById('opt-imp-count');
     const impCount = impCountEl ? (parseInt(impCountEl.value, 10) || 1) : 1;
     document.getElementById('setup-info').innerHTML =
-      `<strong>How it works:</strong> ${impCount > 1 ? `${impCount} players are Imposters` : 'One player is the Imposter'} and know the secret word — everyone else only gets a hint. Imposters invent misleading hints to steer the group away. The team shares <strong>3 word guesses</strong> and <strong>${impCount} vote-out attempt${impCount > 1 ? 's' : ''}</strong> for the whole game, usable any time. Players win by guessing the word or voting out all Imposters. Imposters win by surviving all <strong>${n} cycle${n !== 1 ? 's' : ''}</strong> (one per player) or making the team run out of guesses.`;
+      `<strong>How it works:</strong> ${impCount > 1 ? `${impCount} players are Imposters` : 'One player is the Imposter'} and know the secret word — everyone else only gets a hint. Imposters invent misleading hints to steer the group away. The team shares <strong>3 word guesses</strong> and <strong>${impCount} vote-out attempt${impCount > 1 ? 's' : ''}</strong> for the whole game, usable any time. Players win by guessing the word or voting out all Imposters. Imposters win by surviving <strong>one cycle per player</strong> (${n} for this game) or making the team run out of guesses.`;
   } else {
     const ckCountEl = document.getElementById('opt-ck-count');
     const c = ckCountEl ? (parseInt(ckCountEl.value, 10) || 1) : Math.max(1, Math.floor(n / 3));
