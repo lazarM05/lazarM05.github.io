@@ -136,7 +136,7 @@ Use `Grep` to find tasks by keyword rather than reading the whole file.
 
 ## Git & GitHub
 
-- **Remote:** `origin` → `https://github.com/lazarM05/lazarM05.github.io.git` (public repo — doubles as the account's GitHub Pages root site, so the game is served at `lazarm05.github.io/` directly, no subpath)
+- **Remote:** `origin` → `https://github.com/lazarM05/ruse.git` (public repo, deployed via Cloudflare Pages at `https://lazarm05-github-io.pages.dev/` — not GitHub Pages, so the account's `lazarM05.github.io` root slot stays free for other use)
 - **Branch:** `master` — normal day-to-day work happens directly here
 - **Commit granularity:** One commit per logical step (e.g. each task in an implementation plan gets its own commit)
 - **Branching strategy:** Solo project, mostly sequential work — stay on `master` by default. I'll propose a separate branch/worktree only for large, risky, or hard-to-reverse changes (the clearest example: the eventual Play Store packaging/signing step) so `master` stays in a known-good state.
